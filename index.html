@@ -2,10 +2,10 @@
 <html>
 <head>
     <script type="module">
-        import { default as init } from './wasm_module.js';
+        import { default as init } from './minimal_demo.js';
 
         async function run() {
-            await init('./wasm_module_bg.wasm');
+            await init('./minimal_demo_bg.wasm');
         }
 
         run();
