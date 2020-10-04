@@ -13,30 +13,5 @@ console_log = "0.1"
 glow = { version = "0.6.0", features=["web-sys"] }
 log = "0.4.11"
 wasm-bindgen = "0.2"
+web-sys = "0.3.22"
 winit = { version = "0.23.0", features=["web-sys"] }
-
-[dependencies.web_sys]
-package = "web-sys"
-version = "0.3.22"
-features = [
-    'console',
-    "AddEventListenerOptions",
-    'CssStyleDeclaration',
-    'BeforeUnloadEvent',
-    'Document',
-    'DomRect',
-    'Element',
-    'Event',
-    'EventTarget',
-    'FocusEvent',
-    'HtmlCanvasElement',
-    'HtmlElement',
-    'KeyboardEvent',
-    'MediaQueryList',
-    'MediaQueryListEvent',
-    'MouseEvent',
-    'Node',
-    'PointerEvent',
-    'Window',
-    'WheelEvent'
-]
