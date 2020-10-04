@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <script type="module">
+        import { default as init } from './wasm_module.js';
+
+        async function run() {
+            await init('./wasm_module_bg.wasm');
+        }
+
+        run();
+    </script>
+</head>
+<body>
+	<h1>Also check your browser's console (Ctrl+Shift+I)</h1>
+        <div id="container">
+            <canvas id="canvas"></canvas>
+        </div>
+</body>
+<html>
