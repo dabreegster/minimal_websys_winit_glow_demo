@@ -10,8 +10,22 @@ crate-type = ["cdylib"]
 [dependencies]
 console_error_panic_hook = { version = "0.1" }
 console_log = "0.1"
+futures = "0.3.5"
+futures-channel = "0.3.6"
 glow = { version = "0.6.0", features=["web-sys"] }
+js-sys = "0.3.45"
 log = "0.4.11"
 wasm-bindgen = "0.2"
-web-sys = "0.3.22"
+wasm-bindgen-futures = "0.4.18"
 winit = { version = "0.23.0", features=["web-sys"] }
+
+[dependencies.web-sys]
+version = "0.3.4"
+features = [
+  "Headers",
+  "Request",
+  "RequestInit",
+  "RequestMode",
+  "Response",
+  "Window",
+]
