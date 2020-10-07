@@ -1,3 +1,4 @@
+use futures_channel::oneshot;
 use glow::*;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
@@ -91,6 +92,8 @@ pub fn main() {
         gl.clear_color(0.1, 0.2, 0.3, 1.0);
     }
 
+    let mut http_resp = None;
+
     event_loop.run(move |event, _, control_flow| {
         *control_flow = ControlFlow::Wait;
 
@@ -106,12 +109,29 @@ pub fn main() {
                     if input.virtual_keycode == Some(winit::event::VirtualKeyCode::Space)
                         && input.state == winit::event::ElementState::Pressed
                     {
-                        start_http_call("http://0.0.0.0:8000/black_humor.txt".to_string());
-                    } else if 
-                    input.virtual_keycode == Some(winit::event::VirtualKeyCode::R)
-                        && input.state == winit::event::ElementState::Pressed {
-                            read_http_results();
+                        if http_resp.is_none() {
+                            let (tx, rx) = oneshot::channel::<String>();
+                            http_resp = Some(rx);
+                            start_http_call("http://0.0.0.0:8000/black_humor.txt".to_string(), tx);
+                        } else {
+                            log::error!(
+                                "Haven't read the previously made request yet; press R first"
+                            );
                         }
+                    } else if input.virtual_keycode == Some(winit::event::VirtualKeyCode::R)
+                        && input.state == winit::event::ElementState::Pressed
+                    {
+                        if let Some(mut channel) = http_resp.take() {
+                            if let Some(resp) = channel.try_recv().unwrap() {
+                                log::info!("Got response! {}", resp);
+                            } else {
+                                log::info!("No response yet, try again later");
+                                http_resp = Some(channel);
+                            }
+                        } else {
+                            log::error!("Haven't made an HTTP request yet, press space first");
+                        }
+                    }
                 }
                 _ => {}
             },
@@ -127,9 +147,8 @@ pub fn main() {
     });
 }
 
-fn start_http_call(url: String) {
+fn start_http_call(url: String, tx: oneshot::Sender<String>) {
     spawn_local(async move {
-        log::debug!("inside async thing, grabbing {}", url);
         let mut opts = RequestInit::new();
         opts.method("GET");
         opts.mode(RequestMode::Cors);
@@ -142,11 +161,9 @@ fn start_http_call(url: String) {
             .unwrap();
 
         let window = web_sys::window().unwrap();
-        log::debug!("making req");
         let resp_value = JsFuture::from(window.fetch_with_request(&request))
             .await
             .unwrap();
-        log::debug!("got resp");
 
         // `resp_value` is a `Response` object.
         assert!(resp_value.is_instance_of::<Response>());
@@ -154,12 +171,9 @@ fn start_http_call(url: String) {
 
         // Convert this other `Promise` into a rust `Future`.
         let text = JsFuture::from(resp.text().unwrap()).await.unwrap();
-        log::debug!("actually got resp contents: {}", text.as_string().unwrap());
+        let actual_txt = format!("{}", text.as_string().unwrap());
+        tx.send(actual_txt).unwrap();
     });
-    log::debug!("done spawning it");
-}
-
-fn read_http_results() {
 }
 
 #[wasm_bindgen(start)]
