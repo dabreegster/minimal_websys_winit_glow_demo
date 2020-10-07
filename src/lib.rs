@@ -97,7 +97,7 @@ pub fn main() {
     event_loop.run(move |event, _, control_flow| {
         *control_flow = ControlFlow::Wait;
 
-        log::debug!("{:?}", event);
+        //log::debug!("{:?}", event);
 
         match event {
             Event::WindowEvent { event, .. } => match event {
@@ -105,31 +105,48 @@ pub fn main() {
                     *control_flow = ControlFlow::Exit;
                 }
                 WindowEvent::KeyboardInput { input, .. } => {
-                    // Press space to start the HTTP fetch, press R to try to read it.
-                    if input.virtual_keycode == Some(winit::event::VirtualKeyCode::Space)
-                        && input.state == winit::event::ElementState::Pressed
-                    {
-                        if http_resp.is_none() {
-                            let (tx, rx) = oneshot::channel::<String>();
-                            http_resp = Some(rx);
-                            start_http_call("http://0.0.0.0:8000/black_humor.txt".to_string(), tx);
-                        } else {
-                            log::error!(
-                                "Haven't read the previously made request yet; press R first"
-                            );
-                        }
-                    } else if input.virtual_keycode == Some(winit::event::VirtualKeyCode::R)
-                        && input.state == winit::event::ElementState::Pressed
-                    {
-                        if let Some(mut channel) = http_resp.take() {
-                            if let Some(resp) = channel.try_recv().unwrap() {
-                                log::info!("Got response! {}", resp);
+                    if input.state == winit::event::ElementState::Pressed {
+                        // Press space to start the HTTP fetch, press R to try to read it.
+                        if input.virtual_keycode == Some(winit::event::VirtualKeyCode::Space) {
+                            if http_resp.is_none() {
+                                let (tx, rx) = oneshot::channel::<String>();
+                                http_resp = Some(rx);
+                                start_http_call(
+                                    "http://0.0.0.0:8000/black_humor.txt".to_string(),
+                                    tx,
+                                );
                             } else {
-                                log::info!("No response yet, try again later");
-                                http_resp = Some(channel);
+                                log::error!(
+                                    "Haven't read the previously made request yet; press R first"
+                                );
                             }
-                        } else {
-                            log::error!("Haven't made an HTTP request yet, press space first");
+                        } else if input.virtual_keycode == Some(winit::event::VirtualKeyCode::R) {
+                            if let Some(mut channel) = http_resp.take() {
+                                if let Some(resp) = channel.try_recv().unwrap() {
+                                    log::info!("Got response! {}", resp);
+                                } else {
+                                    log::info!("No response yet, try again later");
+                                    http_resp = Some(channel);
+                                }
+                            } else {
+                                log::error!("Haven't made an HTTP request yet, press space first");
+                            }
+                        } else if input.virtual_keycode == Some(winit::event::VirtualKeyCode::S) {
+                            // TODO This locks up the browser, it doesn't work
+                            let (tx, mut rx) = oneshot::channel::<String>();
+                            start_http_call("http://0.0.0.0:8000/huge_seattle.bin".to_string(), tx);
+                            log::info!("Made request, now spinlock and wait");
+                            let mut cnt = 0;
+                            loop {
+                                cnt += 1;
+                                if cnt % 1000 == 0 {
+                                    log::info!("poll attempt {}", cnt);
+                                }
+                                if let Some(resp) = rx.try_recv().unwrap() {
+                                    log::info!("Aha, got the response! {}", resp);
+                                    break;
+                                }
+                            }
                         }
                     }
                 }
